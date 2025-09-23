@@ -133,7 +133,7 @@ type BackspaceKeyProps = { onBackspace: () => void };
 export function BackspaceKey({ onBackspace }: BackspaceKeyProps) {
   return (
     <div
-      className={`flex h-14 w-8 items-center justify-center rounded-lg bg-gray-300 text-sm font-bold text-black select-none sm:w-16`}
+      className={`flex h-14 w-8 items-center justify-center rounded-lg bg-gray-300 text-sm font-bold text-black select-none sm:w-16 hover:cursor-pointer`}
       onClick={onBackspace}
     >
       <Delete />
