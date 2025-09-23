@@ -27,7 +27,7 @@ export default function ConnectionsTile({
         selected
           ? "bg-connections-selected-tile text-white"
           : "bg-connections-default-tile",
-        isShaking && selected && "animate-shake",
+        isShaking && "animate-shake",
       )}
       onClick={onClick}
     >
