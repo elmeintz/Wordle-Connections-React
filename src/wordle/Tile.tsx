@@ -48,6 +48,22 @@ export enum TileState {
 type TileProps = { letter: string | null; state: TileState };
 
 export default function Tile({ letter, state }: TileProps) {
-  console.log(letter, state); // You should remove this - added here to prevent destructuring err
-  return <p>TODO: Make Tiles!</p>;
+  const baseStyle =
+    "w-12 h-12 border-2 flex items-center justify-center text-xl font-bold uppercase";
+
+  // Extra styles depending on the tile’s state
+    const stateStyle: Record<TileState, string> = {
+    [TileState.Correct]: "bg-[#6aaa64] border-[#6aaa64] text-white",
+    [TileState.PartiallyCorrect]: "bg-[#c9b458] border-[#c9b458] text-white",
+    [TileState.Incorrect]: "bg-gray-400 border-gray-400 text-white",
+    [TileState.Default]: "border-gray-500 bg-white text-black",
+  };
+
+  return (
+    <div className={`${baseStyle} ${stateStyle[state]}`}>
+      {letter}
+    </div>
+  );
+
+  //console.log(letter, state); // You should remove this - added here to prevent destructuring err
 }
