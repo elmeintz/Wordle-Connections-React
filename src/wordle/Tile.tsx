@@ -49,13 +49,13 @@ type TileProps = { letter: string | null; state: TileState };
 
 export default function Tile({ letter, state }: TileProps) {
   const baseStyle =
-    "w-12 h-12 border-2 flex items-center justify-center text-xl font-bold uppercase";
+    "w-56 h-56 border-2 flex items-center justify-center text-2xl font-bold uppercase";
 
-  // Extra styles depending on the tile’s state
+  // styles depending on the tiles state 
     const stateStyle: Record<TileState, string> = {
-    [TileState.Correct]: "bg-[#6aaa64] border-[#6aaa64] text-white",
-    [TileState.PartiallyCorrect]: "bg-[#c9b458] border-[#c9b458] text-white",
-    [TileState.Incorrect]: "bg-gray-400 border-gray-400 text-white",
+    [TileState.Correct]: "bg-wordle-green border-wordle-green text-white",
+    [TileState.PartiallyCorrect]: "bg-wordle-yellow border-wordle-yellow text-white",
+    [TileState.Incorrect]: "bg-gray-500 border-gray-500 text-white",
     [TileState.Default]: "border-gray-500 bg-white text-black",
   };
 

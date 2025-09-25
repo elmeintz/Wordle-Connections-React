@@ -50,6 +50,19 @@ export default function WordlePage() {
    */
 
   // YOUR IMPLEMENTATION HERE
+    useEffect(() => {
+    fetch("https://comp426-apis.vercel.app/api/wordle/random-word")
+      .then((response) => response.json())
+      .then((data) => {
+        // API returns { word: }
+        setTargetWord(data.word);
+      })
+      .catch((error) => {
+        console.error("Error fetching word:", error);
+      });
+  }, []); 
+  
+
 
   /**
    * EXTRA CREDIT: In the real Wordle game, you can type on your keyboard to
@@ -78,7 +91,11 @@ export default function WordlePage() {
    *
    * @param letter The letter that was pressed.
    */
-  const onKeyPress = (letter: string) => {};
+  const onKeyPress = (letter: string) => {
+    if (currentGuess.length < 5) { // test to ensure current guess is at most 5 letters long
+    setCurrentGuess(currentGuess + letter); //add new letter to the current guess
+    }
+  };
 
   /**
    * TODO: The <Keyboard> requires a handler for when the backspace key is pressed.
@@ -88,7 +105,11 @@ export default function WordlePage() {
    *
    * Add validation to ensure that nothing happens when the current guess is already empty.
    */
-  const onBackspace = () => {};
+  const onBackspace = () => {
+    if (currentGuess.length > 0) {
+    setCurrentGuess(currentGuess.slice(0, -1)); // remove last char
+    }
+  };
 
   /**
    * TODO: We need to ensure that guesses that the user makes are valid five letter words.
@@ -106,7 +127,19 @@ export default function WordlePage() {
    * @param guess The guess to check.
    * @returns true if the guess is valid, false otherwise.
    */
-  const checkGuessValidity = async (guess: string) => {};
+  const checkGuessValidity = async (guess: string) => {
+        useEffect(() => {
+    fetch("https://comp426-apis.vercel.app/api/wordle/random-word")
+      .then((response) => response.json())
+      .then((data) => {
+        // API returns { word: }
+        setTargetWord(data.word);
+      })
+      .catch((error) => {
+        console.error("Error fetching word:", error);
+      });
+  }, []); 
+  };
 
   // Custom hook that abstracts functionality for showing toasts on the screen.
   //
