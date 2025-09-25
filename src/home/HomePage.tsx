@@ -20,11 +20,11 @@ export default function HomePage() {
       <p className="h-14 px-4 text-center text-xs text-gray-600">
         Made with 🩵 by{" "}
         <a className="underline underline-offset-2 hover:cursor-pointer">
-          Partner 1
+          Lauren Meintzer
         </a>{" "}
         and{" "}
         <a className="underline underline-offset-2 hover:cursor-pointer">
-          Partner 2
+          Logan Oscher
         </a>{" "}
         for COMP 426 @ UNC-Chapel Hill
       </p>
