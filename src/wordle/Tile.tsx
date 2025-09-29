@@ -48,22 +48,25 @@ export enum TileState {
 type TileProps = { letter: string | null; state: TileState };
 
 export default function Tile({ letter, state }: TileProps) {
-  const baseStyle =
-    "w-56 h-56 border-2 flex items-center justify-center text-2xl font-bold uppercase";
+  const base =
+    "w-14 h-14 border-2 flex items-center justify-center text-2xl font-bold uppercase select-none";
 
-  // styles depending on the tiles state 
-    const stateStyle: Record<TileState, string> = {
+  // set styles based on instructions above
+  const nonDefaultStyles: Record<TileState, string> = {
     [TileState.Correct]: "bg-wordle-green border-wordle-green text-white",
-    [TileState.PartiallyCorrect]: "bg-wordle-yellow border-wordle-yellow text-white",
+    [TileState.PartiallyCorrect]:
+      "bg-wordle-yellow border-wordle-yellow text-white",
     [TileState.Incorrect]: "bg-gray-500 border-gray-500 text-white",
-    [TileState.Default]: "border-gray-500 bg-white text-black",
+    // we'll compute Default separately because its border depends on `letter`.
+    [TileState.Default]: "",
   };
 
-  return (
-    <div className={`${baseStyle} ${stateStyle[state]}`}>
-      {letter}
-    </div>
-  );
+  //default style is determined whether there is a letter in the tyle
+  const defaultStyle =
+    "bg-white text-black " + (letter ? "border-gray-500" : "border-gray-300");
 
-  //console.log(letter, state); // You should remove this - added here to prevent destructuring err
+  const style =
+    base + " " + (state === TileState.Default ? defaultStyle : nonDefaultStyles[state]);
+
+  return <div className={style}>{letter ?? ""}</div>;
 }

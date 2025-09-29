@@ -52,15 +52,13 @@ export default function WordlePage() {
   // YOUR IMPLEMENTATION HERE
     useEffect(() => {
     fetch("https://comp426-apis.vercel.app/api/wordle/random-word")
-      .then((response) => response.json())
-      .then((data) => {
-        // API returns { word: }
-        setTargetWord(data.word);
-      })
-      .catch((error) => {
-        console.error("Error fetching word:", error);
+      .then((r) => r.json())
+      .then((data) => setTargetWord(String(data.word || "").toUpperCase()))
+      .catch((err) => {
+        console.error("Error fetching word:", err);
       });
-  }, []); 
+  }, []);
+  
   
 
 
@@ -91,10 +89,11 @@ export default function WordlePage() {
    *
    * @param letter The letter that was pressed.
    */
+
   const onKeyPress = (letter: string) => {
-    if (currentGuess.length < 5) { // test to ensure current guess is at most 5 letters long
-    setCurrentGuess(currentGuess + letter); //add new letter to the current guess
-    }
+  if (gameOver) return; //if game is over, return
+  if (currentGuess.length >= 5) return; //make sure currentGuess is at mast 5 letters
+  setCurrentGuess((g) => g + letter.toUpperCase()); //add new letter to current guess 
   };
 
   /**
@@ -105,10 +104,10 @@ export default function WordlePage() {
    *
    * Add validation to ensure that nothing happens when the current guess is already empty.
    */
-  const onBackspace = () => {
-    if (currentGuess.length > 0) {
-    setCurrentGuess(currentGuess.slice(0, -1)); // remove last char
-    }
+    const onBackspace = () => {
+    if (gameOver) return; //return if game is over
+    if (currentGuess.length === 0) return; 
+    setCurrentGuess((g) => g.slice(0, -1)); //remove last char
   };
 
   /**
@@ -127,19 +126,20 @@ export default function WordlePage() {
    * @param guess The guess to check.
    * @returns true if the guess is valid, false otherwise.
    */
-  const checkGuessValidity = async (guess: string) => {
-        useEffect(() => {
-    fetch("https://comp426-apis.vercel.app/api/wordle/random-word")
-      .then((response) => response.json())
-      .then((data) => {
-        // API returns { word: }
-        setTargetWord(data.word);
-      })
-      .catch((error) => {
-        console.error("Error fetching word:", error);
-      });
-  }, []); 
+    const checkGuessValidity = async (guessUpper: string): Promise<boolean> => {
+    const guessLower = guessUpper.toLowerCase();
+    try {
+      const res = await fetch(
+        `https://comp426-apis.vercel.app/api/wordle/word-validator/${guessLower}`
+      );
+      const data = await res.json();
+      return Boolean(data.valid);
+    } catch (e) {
+      console.error("Validation error:", e);
+      return false;
+    }
   };
+
 
   // Custom hook that abstracts functionality for showing toasts on the screen.
   //
@@ -176,7 +176,43 @@ export default function WordlePage() {
    * 5. If the current guess is equal to the target word, end the game by updating the
    *   game status to 'won' after a 2000ms delay.
    */
-  const makeGuess = async () => {};
+    const makeGuess = async () => {
+    if (gameOver) return;
+
+    // 1.) ensure current guess is < 5 chars
+    if (currentGuess.length < 5) {
+      showToast("Please enter a 5-letter word");
+      return;
+    }
+
+    const guess = currentGuess; // copy currentGuess
+
+    // 2) if not valid, run showToast
+    const isValid = await checkGuessValidity(guess);
+    if (!isValid) {
+      showToast("This is not a valid word.");
+      return;
+    }
+
+    // 3) commit guess to current row, then clear
+    setPastGuesses((prev) => {
+      const next = [...prev];
+      next[activeRow] = guess; // keep uppercase
+      return next;
+    });
+
+    // 5) win condition (uppercase compare)
+    if (guess === targetWord) {
+      setTimeout(() => setGameStatus("won"), 2000);
+    } else if (activeRow >= 5) {
+      // 4) Out of rows after this guess
+      setTimeout(() => setGameStatus("lost"), 2000);
+    }
+
+
+    setCurrentGuess("");
+    setActiveRow((r) => Math.min(r + 1, 5));
+  };
 
   return (
     <div className="flex h-svh max-h-svh w-full flex-col items-center overflow-hidden">
