@@ -6,7 +6,7 @@ import { useState } from "react";
 import Header from "../ui/Header";
 import ConnectionsTile from "./ConnectionsTile";
 import ConnectionsCompletedRow from "./ConnectionsCompletedRow";
-import { emptySet } from "../utils/collections";
+import { emptySet, shuffleArray } from "../utils/collections";
 import ConnectionsButton from "../ui/ConnectionsButton";
 import ConnectionsMistakesCounter from "./ConnectionsMistakesCounter";
 import { useShakeTiles } from "../hooks/useShakeTiles";
@@ -78,7 +78,22 @@ export default function ConnectionsPage() {
    *
    * Remember that only a maximum of four tiles should be selectable at a time.
    */
-  const selectOption = (option: string) => {};
+  const selectOption = (option: string) => {
+  setCurrentSelection(prev => {
+    const copy = new Set(prev);
+
+    if (copy.has(option)) {
+      // remove if already selected
+      copy.delete(option);
+    } else if (copy.size < 4) {
+      // add if less than 4 items
+      copy.add(option);
+    }
+
+    return copy;
+  });
+};
+
 
   // Determines whether the deselect button should be enabled.
   const canDeselectAll = currentSelection.size > 0;
@@ -87,7 +102,11 @@ export default function ConnectionsPage() {
    * TODO: The `deselectAll` handler runs when a user presses on the "Deselect All"
    * button. Implement the necessary functionality for this handler.
    */
-  const deselectAll = () => {};
+  const deselectAll = () => {
+    if (canDeselectAll){
+      setCurrentSelection(emptySet())
+    }
+  };
 
   /**
    * TODO: The `shuffle` handler runs when a user presses on the "Shuffle" button.
@@ -96,7 +115,9 @@ export default function ConnectionsPage() {
    * HINT: You may use any of the exported helper functions in the `utils/collections.ts`
    * file.
    */
-  const shuffle = () => {};
+  const shuffle = () => {
+    shuffleArray(optionsLeft)
+  };
 
   // Determines whether or not the guess button should be enabled.
   let canGuess = currentSelection.size === 4;
