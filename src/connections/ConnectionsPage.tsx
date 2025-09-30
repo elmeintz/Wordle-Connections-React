@@ -6,14 +6,16 @@ import { useState } from "react";
 import Header from "../ui/Header";
 import ConnectionsTile from "./ConnectionsTile";
 import ConnectionsCompletedRow from "./ConnectionsCompletedRow";
-import { emptySet, shuffleArray } from "../utils/collections";
+import { emptySet, shuffleArray, countSetOverlap } from "../utils/collections";
 import ConnectionsButton from "../ui/ConnectionsButton";
 import ConnectionsMistakesCounter from "./ConnectionsMistakesCounter";
 import { useShakeTiles } from "../hooks/useShakeTiles";
 import { useToast } from "../hooks/useToast";
 import Toast from "../ui/Toast";
 import ConnectionsResults from "./results/ConnectionsResults";
-import { ConnectionsGameAnswer, GameStatus } from "./types";
+import { ConnectionsGameAnswer, ConnectionsGameResponse, GameStatus } from "./types";
+
+
 
 export default function ConnectionsPage() {
   /** State variables and their initial values are given: DO NOT MODIFY. */
@@ -69,6 +71,22 @@ export default function ConnectionsPage() {
    */
 
   // YOUR IMPLEMENTATION HERE
+  if (originalAnswers.length === 0) {
+  (async () => {
+    try {
+      const resp = await fetch("https://comp426-apis.vercel.app/api/connections");
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = (await resp.json()) as ConnectionsGameResponse;
+
+      setOriginalAnswers(data.answers);
+      setLeftToGuess(data.answers);
+      setOptionsLeft(shuffleArray([...data.options]));
+    } catch (e) {
+      console.error("Validation error:", e);
+    }
+  })();
+}
+
 
   /**
    * TODO: The `selectOption` handler runs when a user presses on a tile.
@@ -81,7 +99,6 @@ export default function ConnectionsPage() {
   const selectOption = (option: string) => {
   setCurrentSelection(prev => {
     const copy = new Set(prev);
-
     if (copy.has(option)) {
       // remove if already selected
       copy.delete(option);
@@ -89,7 +106,6 @@ export default function ConnectionsPage() {
       // add if less than 4 items
       copy.add(option);
     }
-
     return copy;
   });
 };
@@ -115,9 +131,7 @@ export default function ConnectionsPage() {
    * HINT: You may use any of the exported helper functions in the `utils/collections.ts`
    * file.
    */
-  const shuffle = () => {
-    shuffleArray(optionsLeft)
-  };
+  const shuffle = () => setOptionsLeft((opts) => shuffleArray([...opts]));
 
   // Determines whether or not the guess button should be enabled.
   let canGuess = currentSelection.size === 4;
@@ -189,14 +203,74 @@ export default function ConnectionsPage() {
    * To learn more about this, check out the official React docs here:
    * https://react.dev/learn/updating-arrays-in-state
    */
-  const guess = () => {};
+  const guess = () => {
+  if (currentSelection.size !== 4) return;
+
+  // 1) Already guessed?
+  const alreadyGuessed = previousGuesses.some(
+    (prevGuess) =>
+      countSetOverlap(prevGuess, currentSelection) === prevGuess.size &&
+      prevGuess.size === currentSelection.size
+  );
+  if (alreadyGuessed) {
+    showToast("Already guessed.");
+    return;
+  }
+
+  // Record this (new) guess
+  setPreviousGuesses((prev) => [...prev, new Set(currentSelection)]);
+
+  // Helpers built on countSetOverlap
+  const isExactCategory = (ans: ConnectionsGameAnswer) =>
+    countSetOverlap(new Set(ans.correct), currentSelection) === 4;
+
+  const isOneAway = (ans: ConnectionsGameAnswer) =>
+    countSetOverlap(new Set(ans.correct), currentSelection) === 3;
+
+  // 2) Exact match?
+  const exactIdx = leftToGuess.findIndex(isExactCategory);
+  if (exactIdx !== -1) {
+    const exact = leftToGuess[exactIdx];
+
+    // Reveal this category & remove its tiles from the board
+    setRevealedAnswers((prev) => [...prev, exact]);
+    setLeftToGuess((prev) => prev.filter((_, i) => i !== exactIdx));
+    setOptionsLeft((prev) => prev.filter((w) => !exact.correct.includes(w)));
+    setCurrentSelection(emptySet());
+
+    // If that was the final category, win the game
+    if (leftToGuess.length === 1) {
+      handleGameWin();
+    }
+    return;
+  }
+
+  // 2b) One away or incorrect
+  const oneAway = leftToGuess.some(isOneAway);
+  // Shake incorrect tiles either way
+  shakeTiles([...currentSelection]); 
+  if (oneAway) {
+    showToast("One away...");
+  }
+
+  // 4) Decrease guesses; 3) trigger loss if none left
+  setGuessesLeft((g) => {
+    const next = g - 1;
+    if (next <= 0) handleGameLoss();
+    return next;
+  });
+};
+
 
   /**
    * TODO: The `handleGameWin` handler runs whenever a game is won. The handler should:
    * - After a 1000ms delay, show a toast with the text "Congratulations!"
    * - After an additional 2000ms, set the game status to `"won"`.
    */
-  const handleGameWin = () => {};
+  const handleGameWin = () => {
+      setTimeout(() => showToast("Congratulations!"), 1000);
+      setTimeout(() => setGameStatus("won"), 2000);
+  };
 
   /**
    * TODO: The `handleGameLoss` handler runs whenever a game is lost. The handler should:
@@ -205,7 +279,28 @@ export default function ConnectionsPage() {
    *   Then, show a toast with the text "Better luck next time!"
    * - Finally, after an additional 2000ms, set the game status to `"lost"`.
    */
-  const handleGameLoss = () => {};
+  
+  const handleGameLoss = () => {
+  // after 1000ms, show "Game over."
+  setTimeout(() => {
+    showToast("Game over.");
+  }, 1000);
+
+  // after an additional 2000ms, clear options, reveal all answers, and show "Better luck next time!"
+  setTimeout(() => {
+    setOptionsLeft([]);
+    setRevealedAnswers((prev) => [...prev, ...leftToGuess]);
+    setLeftToGuess([]);
+    showToast("Better luck next time!");
+  }, 3000); // 1000 + 2000
+
+  // after an additional 2000ms, mark the game as lost
+  setTimeout(() => {
+    setGameStatus("lost");
+  }, 5000); // 300 + 2000
+  };
+
+
 
   return (
     <div className="flex h-svh max-h-svh w-full flex-col items-center gap-5 overflow-hidden">
