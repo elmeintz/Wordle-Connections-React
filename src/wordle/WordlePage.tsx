@@ -59,25 +59,6 @@ export default function WordlePage() {
       });
   }, []);
   
-  
-
-
-  /**
-   * EXTRA CREDIT: In the real Wordle game, you can type on your keyboard to
-   * type characters. As noted in the assignment reading, you can add keyboard
-   * support to Wordle using traditional event handlers. Remember that adding
-   * event handler is considered a *side effect*.
-   *
-   * Make sure that you use React's features to clean up the event handler when
-   * the component is unmounted.
-   *
-   * Check out this documentation for more information:
-   * https://react.dev/learn/removing-effect-dependencies
-   *
-   * HINT: You can add event handlers to the `window` to apply a global event handler!
-   */
-
-  // YOUR IMPLEMENTATION HERE
 
   /**
    * TODO:  The <Keyboard> requires a handler for when a letter is pressed.
@@ -204,15 +185,71 @@ export default function WordlePage() {
     // 5) win condition (uppercase compare)
     if (guess === targetWord) {
       setTimeout(() => setGameStatus("won"), 2000);
+      return;
+
     } else if (activeRow >= 5) {
       // 4) Out of rows after this guess
       setTimeout(() => setGameStatus("lost"), 2000);
+      return;
     }
-
 
     setCurrentGuess("");
     setActiveRow((r) => Math.min(r + 1, 5));
   };
+
+  /**
+   * EXTRA CREDIT: In the real Wordle game, you can type on your keyboard to
+   * type characters. As noted in the assignment reading, you can add keyboard
+   * support to Wordle using traditional event handlers. Remember that adding
+   * event handler is considered a *side effect*.
+   *
+   * Make sure that you use React's features to clean up the event handler when
+   * the component is unmounted.
+   *
+   * Check out this documentation for more information:
+   * https://react.dev/learn/removing-effect-dependencies
+   *
+   * HINT: You can add event handlers to the `window` to apply a global event handler!
+   */
+
+  // YOUR IMPLEMENTATION HERE
+  useEffect(() => {
+  const handleKey = (e: KeyboardEvent) => {
+    if (gameOver) return;
+    const key = e.key;
+
+    // ignore typing when user is focused in an input/textarea/select
+    const el = e.target as HTMLElement | null;
+    if (el && (/^(INPUT|TEXTAREA|SELECT)$/i).test(el.tagName) && !el.hasAttribute('data-wordle-keys')) {
+      return;
+    }
+
+    if (key === "Enter") {
+      e.preventDefault();
+      //check to make sure when you hit enter with key that word is 5 letters (if not it will return)
+      if (!targetWord || targetWord.length !== 5) return;
+      if (currentGuess.length < 5) {
+        showToast("Please enter a 5-letter word");
+        return;
+      }
+      makeGuess();
+      return;
+    }
+    if (key === "Backspace") {
+      e.preventDefault();
+      onBackspace();
+      return;
+    }
+    if (/^[a-z]$/i.test(key)) {
+      e.preventDefault();
+      onKeyPress(key.toUpperCase());
+    }
+  };
+
+  window.addEventListener("keydown", handleKey);
+  return () => window.removeEventListener("keydown", handleKey);
+}, [gameOver, onKeyPress, onBackspace, makeGuess]);
+
 
   return (
     <div className="flex h-svh max-h-svh w-full flex-col items-center overflow-hidden">
@@ -227,14 +264,16 @@ export default function WordlePage() {
       {!gameOver && (
         <div className="flex w-full flex-1 flex-col items-center justify-evenly gap-3">
           <div className="flex flex-col gap-2">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <TileRow
-                key={i}
-                target={targetWord}
-                guess={activeRow === i ? currentGuess : pastGuesses[i]}
-                guessed={activeRow > i}
-              />
-            ))}
+            {[0,1,2,3,4,5].map((i) => (
+            <TileRow
+            key={i}
+            target={targetWord}
+            // after committing, currentGuess may be "", so fall back to saved guess
+            guess={activeRow === i ? (currentGuess || pastGuesses[i]) : pastGuesses[i]}
+            // reveal if it's before the active row OR it already has a saved guess
+           guessed={activeRow > i || pastGuesses[i] !== ""}
+            />
+          ))}
           </div>
           <div>
             <Keyboard

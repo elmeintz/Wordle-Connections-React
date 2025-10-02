@@ -2,7 +2,7 @@
  * File containing the main component for the Connections page.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../ui/Header";
 import ConnectionsTile from "./ConnectionsTile";
 import ConnectionsCompletedRow from "./ConnectionsCompletedRow";
@@ -71,7 +71,7 @@ export default function ConnectionsPage() {
    */
 
   // YOUR IMPLEMENTATION HERE
-  if (originalAnswers.length === 0) {
+  useEffect(() => {
   (async () => {
     try {
       const resp = await fetch("https://comp426-apis.vercel.app/api/connections");
@@ -83,9 +83,10 @@ export default function ConnectionsPage() {
       setOptionsLeft(shuffleArray([...data.options]));
     } catch (e) {
       console.error("Validation error:", e);
-    }
-  })();
-}
+      }
+    })();
+  }, []);
+
 
 
   /**
@@ -131,7 +132,11 @@ export default function ConnectionsPage() {
    * HINT: You may use any of the exported helper functions in the `utils/collections.ts`
    * file.
    */
-  const shuffle = () => setOptionsLeft((opts) => shuffleArray([...opts]));
+  const shuffle = () => {
+    shakeTiles([])
+    setOptionsLeft((opts) => shuffleArray([...opts]));
+  };
+
 
   // Determines whether or not the guess button should be enabled.
   let canGuess = currentSelection.size === 4;
@@ -203,10 +208,11 @@ export default function ConnectionsPage() {
    * To learn more about this, check out the official React docs here:
    * https://react.dev/learn/updating-arrays-in-state
    */
+
   const guess = () => {
   if (currentSelection.size !== 4) return;
 
-  // 1) Already guessed?
+  // 1) tests if it was already guessed
   const alreadyGuessed = previousGuesses.some(
     (prevGuess) =>
       countSetOverlap(prevGuess, currentSelection) === prevGuess.size &&
@@ -217,7 +223,7 @@ export default function ConnectionsPage() {
     return;
   }
 
-  // Record this (new) guess
+  // record new guess
   setPreviousGuesses((prev) => [...prev, new Set(currentSelection)]);
 
   // Helpers built on countSetOverlap
@@ -227,12 +233,12 @@ export default function ConnectionsPage() {
   const isOneAway = (ans: ConnectionsGameAnswer) =>
     countSetOverlap(new Set(ans.correct), currentSelection) === 3;
 
-  // 2) Exact match?
+  // 2) tests for exact match
   const exactIdx = leftToGuess.findIndex(isExactCategory);
   if (exactIdx !== -1) {
     const exact = leftToGuess[exactIdx];
 
-    // Reveal this category & remove its tiles from the board
+    // reveal this category & remove its tiles from the board
     setRevealedAnswers((prev) => [...prev, exact]);
     setLeftToGuess((prev) => prev.filter((_, i) => i !== exactIdx));
     setOptionsLeft((prev) => prev.filter((w) => !exact.correct.includes(w)));
@@ -244,16 +250,17 @@ export default function ConnectionsPage() {
     }
     return;
   }
-
-  // 2b) One away or incorrect
   const oneAway = leftToGuess.some(isOneAway);
-  // Shake incorrect tiles either way
-  shakeTiles([...currentSelection]); 
-  if (oneAway) {
-    showToast("One away...");
-  }
 
-  // 4) Decrease guesses; 3) trigger loss if none left
+  //don't read currentSelection again after this
+  const selectedIds = [...currentSelection];
+
+  shakeTiles(selectedIds);
+  if (oneAway) showToast("One away...");
+
+
+
+  // 4) decrease guesses; 3) trigger loss if none left
   setGuessesLeft((g) => {
     const next = g - 1;
     if (next <= 0) handleGameLoss();
@@ -268,8 +275,8 @@ export default function ConnectionsPage() {
    * - After an additional 2000ms, set the game status to `"won"`.
    */
   const handleGameWin = () => {
-      setTimeout(() => showToast("Congratulations!"), 1000);
-      setTimeout(() => setGameStatus("won"), 2000);
+  setTimeout(() => showToast("Congratulations!"), 1000);
+  setTimeout(() => setGameStatus("won"), 3000); // 1000 + 2000
   };
 
   /**
